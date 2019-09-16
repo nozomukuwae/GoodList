@@ -13,8 +13,9 @@ import RxCocoa
 
 class TaskListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     
-    private var disposeBag = DisposeBag()
+    private let disposeBag = DisposeBag()
     private var tasks = BehaviorRelay<[Task]>(value: [])
+    private var filteredTasks = [Task]()
     
     @IBOutlet weak var prioritySegmentedControl: UISegmentedControl!
     @IBOutlet weak var tableView: UITableView!
@@ -46,11 +47,33 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
                 fatalError()
         }
         
-        addTVC.taskSubjectObservable.subscribe(onNext: { task in
+        addTVC.taskSubjectObservable.subscribe(onNext: { [unowned self] task in
+            let priority = Priority(rawValue: self.prioritySegmentedControl.selectedSegmentIndex - 1)
+            
             var existingTasks = self.tasks.value
             existingTasks.append(task)
             self.tasks.accept(existingTasks)
+            
+            self.filterTasks(by: priority)
         }).disposed(by: disposeBag)
     }
     
+    @IBAction func priorityValueChanged(segmentedControl: UISegmentedControl!) {
+        let priority = Priority(rawValue: segmentedControl.selectedSegmentIndex - 1)
+        filterTasks(by: priority)
+    }
+    
+    private func filterTasks(by priority: Priority?) {
+        if let priority = priority {
+            tasks.map { tasks -> [Task] in
+                return tasks.filter { $0.priority == priority }
+                }.subscribe(onNext: { [weak self] tasks in
+                    self?.filteredTasks = tasks
+                    print(tasks)
+                }).disposed(by: disposeBag)
+        } else {
+            filteredTasks = tasks.value
+            print(filteredTasks)
+        }
+    }
 }
