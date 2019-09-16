@@ -8,8 +8,11 @@
 
 import Foundation
 import UIKit
+import RxSwift
 
 class TaskListViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+    
+    private var disposeBag = DisposeBag()
     
     @IBOutlet weak var prioritySegmentedControl: UISegmentedControl!
     @IBOutlet weak var tableView: UITableView!
@@ -33,6 +36,17 @@ class TaskListViewController: UIViewController, UITableViewDelegate, UITableView
         
         return cell 
         
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        guard let navC = segue.destination as? UINavigationController,
+            let addTVC = navC.viewControllers.first as? AddTaskViewController else {
+                fatalError()
+        }
+        
+        addTVC.taskSubjectObservable.subscribe(onNext: { task in
+            print(task)
+        }).disposed(by: disposeBag)
     }
     
 }
